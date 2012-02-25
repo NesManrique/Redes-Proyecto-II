@@ -1,0 +1,6 @@
+Project created pursuing the following objectives:
+
+1) Learn about distributed programs in Java using sockets.
+2) Designing a protocol to comunicate process using XML.
+3) Developing an architecture tolerant to server failures.
+4) Keeping estadistics of server requests.
