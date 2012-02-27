@@ -1,6 +1,13 @@
 import java.io.*;
-import java.util.*;
 import java.net.*;
+//SAX classes
+import org.xml.sax.*;
+import org.xml.sax.helpers.*;
+//JAXP 1.1
+import javax.xml.parsers.*;
+import javax.xml.transform.*;
+import javax.xml.transform.stream.*;
+import javax.xml.transform.sax.*; 
 
 public class servcert{
 
