@@ -16,5 +16,7 @@ public class buscert{
             System.out.println("Error en las opciones. Para ver una ayuda ejecute java buscert -help");
             System.exit(1);
         }
+
+        
     }
 } 
