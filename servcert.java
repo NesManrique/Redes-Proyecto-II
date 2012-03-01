@@ -2,6 +2,17 @@ import java.io.*;
 import java.net.*;
 
 public class servcert{
+
+    ArrayList<Certf> Cert;
+    String Dir;
+    //int listenPort;
+    //int buscPort;
+
+    public servcert(String dir){
+        Dir=dir;
+        Cert=abrirdir(dir);
+    }
+
     public static void main(String args[]){
         int servport = 5000;
         String dir = null;
