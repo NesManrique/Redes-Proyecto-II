@@ -1,13 +1,5 @@
 import java.io.*;
 import java.net.*;
-//SAX classes
-import org.xml.sax.*;
-import org.xml.sax.helpers.*;
-//JAXP 1.1
-import javax.xml.parsers.*;
-import javax.xml.transform.*;
-import javax.xml.transform.stream.*;
-import javax.xml.transform.sax.*; 
 
 public class clicert{
 
@@ -15,16 +7,16 @@ public class clicert{
 
         String dir = null;
         String bushost = null;
-        int puertobus = 4000;
+        int busport = 4000;
         
-        Socket echoSocket = null;
+        Socket socket = null;
         PrintWriter out = null;
         BufferedReader in = null;
 
         if(args.length==6 && args[0].equals("-d") && args[2].equals("-h") && args[4].equals("-p")){
             dir = args[1];
             bushost = args[3];
-            puertobus = Integer.parseInt(args[5]);
+            busport = Integer.parseInt(args[5]);
         }else if(args.length==4 && args[0].equals("-d") && args[2].equals("-h")){
             dir = args[1];
             bushost = args[3];
@@ -42,19 +34,19 @@ public class clicert{
 
         System.out.println("dir dond guardar los certificados "+dir
                             +"\nip o nombre del buscador "+bushost
-                            +"\npuerto de escucha del buscador "+puertobus+"\n");
+                            +"\npuerto de escucha del buscador "+busport+"\n");
 
-        /*try{
-            echoSocket = new Socket(bushost, puertobus);
-            out =  new PrintWriter(echoSocket.getOutputStream(),true);
-            in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-        }catch(UnknownHostException e){
+       try{
+            socket = new Socket(bushost, busport);
+            out =  new PrintWriter(socket.getOutputStream(),true);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+       }catch(UnknownHostException e){
             System.err.println("Erro al conctarse al host: "+bushost);
             System.exit(1);
         }catch(IOException e){
             System.err.println("Couldn't get I/O for the connection to: "+bushost);
             System.exit(1);
-        }*/
+        }
 
         BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
 
@@ -74,20 +66,35 @@ public class clicert{
                 ln=0;
 
                 //Transformar la entrada en XML
-                String[] a = userInput.split(" ");
+               /* String[] a = userInput.split(" ");
                 for(int i=0; i<a.length; i++){
                     System.out.println(a[i]);
                 }
-                //Enviarla al buscador
+                */
+            
+                //Enviarla al buscert
+                out.println("CLIENTE");
+                out.println(userInput);
+                String aux = in.readLine();
+                while(aux != null){   
+                    if(aux.equals("BUSCADOR")){
+                        System.out.println("Server: "+ aux) ;
+                        aux = in.readLine();
+                    }
+                    else{
+                        aux = null;
+                    }
+                }
+
                 //Guardar el Certificado
                 //Imprimir el Certificado
                 //System.out.println("echo: "+ userInput);
             }
         }
 
-        //out.close();
-        //in.close();
+        out.close();
+        in.close();
         stdIn.close();
-        //echoSocket.close();
+        socket.close();
     }
 }
