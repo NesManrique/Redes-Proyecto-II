@@ -41,6 +41,7 @@ public class Certf{
         }
     }
 
+
     public Certf descifrado(String message){
         String[] s = new String[6];
 
