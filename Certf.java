@@ -4,33 +4,24 @@ import java.util.*;
 
 public class Certf{
 
-    String Iss;
-    String Sub;
-    String ValA;
-    String ValB;
-    String Hash;
-    String Fing;
+    String Fname;
+    ArrayList<String> Fields;
 
     public Certf(){};
 
-    public Certf(String is, String subj, String vala, String valb, String hash,
-                    String fing){
-        Iss = is;
-        Sub = subj;
-        ValA = vala;
-        ValB = valb;
-        Hash = hash;
-        Fing = fing;;
-        
+    public Certf(String fname, ArrayList<String> fields){
+        Fname=fname;
+        Fields=fields;
     }
 
     public void printcert(){
-        log(this.Iss);
-        log(this.Sub);
-        log(this.ValA);
-        log(this.ValB);
-        log(this.Hash);
-        log(this.Fing);
+        log(this.Fname);
+
+        ListIterator it = this.Fields.listIterator();
+        while(it.hasNext()){
+            log(it.next());
+        }
+
     }
 
     public void printList(ArrayList<Certf> l){
@@ -38,18 +29,20 @@ public class Certf{
 
         while(it.hasNext()){
             it.next().printcert();
+            log("\n");
         }
     }
 
-    public Certf descifrado(String message){
+    public Certf descifrado(String fname){
         String[] s = new String[6];
+        ArrayList<String> ss = new ArrayList<String>();
 
         try{
-            String[] command = {"openssl x509 -noout -in " + message + " -issuer",
-                "openssl x509 -noout -in " + message + " -subject",
-                "openssl x509 -noout -in " + message + " -hash",
-                "openssl x509 -noout -in " + message + " -fingerprint",
-                "openssl x509 -noout -in " + message + " -dates",
+            String[] command = {"openssl x509 -noout -in " + fname + " -issuer",
+                "openssl x509 -noout -in " + fname + " -subject",
+                "openssl x509 -noout -in " + fname + " -hash",
+                "openssl x509 -noout -in " + fname + " -fingerprint",
+                "openssl x509 -noout -in " + fname + " -dates",
             } ;
 
             for(int i=0; i<command.length; i++){
@@ -81,7 +74,14 @@ public class Certf{
                 stdInput.close();
             }
 
-            Certf c = new Certf(s[0],s[1], s[4], s[5], s[2], s[3]);
+            ss.add(s[0]);
+            ss.add(s[1]);
+            ss.add(s[4]);
+            ss.add(s[5]);
+            ss.add(s[2]);
+            ss.add(s[3]);
+
+            Certf c = new Certf(fname,ss);
 
             return c;
 
@@ -168,15 +168,206 @@ public class Certf{
         } catch (IOException e) {
             log("Problema Escribiendo el archivo: "+fname);
         }
-    } 
+    }
 
-    /*public String query2xml(String query){
-        String[] subs = query.split(" ");
+    public boolean hasChildren(XMLElement x, String a){
+        Vector v = x.getChildren();
+        if(v!=null){
+            for(int i=0; i<v.size(); i++){
+                if(a.equals(((XMLElement)v.get(i)).getName())){
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    public String query2xml(String query){
+		String[] subs;
+        if(query.trim().equals("")){
+			return "";
+		}else
+			subs = query.trim().split("\\s+");
+
+        XMLElement qy = new XMLElement();
+        XMLElement iss = new XMLElement();
+        XMLElement sub = new XMLElement();
+        XMLElement vala = new XMLElement();
+        XMLElement valb = new XMLElement();
+        XMLElement hash = new XMLElement();
+        XMLElement fing = new XMLElement();
+        qy.setName("Query");
+        iss.setName("Issuer");
+        sub.setName("Subject");
+        vala.setName("DatesA");
+        valb.setName("DatesB");
+        hash.setName("Hash");
+        fing.setName("Fingerprint");
+
         for(int i=0; i<subs.length; i++){
-            log(subs[i]);
+
+            if(i+1<subs.length && subs[i+1].endsWith(":")) continue;
+            if(i==subs.length-1 && subs[i].endsWith(":")) continue; 
+ 
+            if(subs[i].equalsIgnoreCase("Issuer:")){
+                if(iss.getContent()!=""){
+                    iss.setContent((iss.getContent())+" "+subs[++i]);
+                }else{
+                    iss.setContent(subs[++i]);
+                }
+ 
+            }else if(subs[i].equalsIgnoreCase("Subject:")){
+                if(sub.getContent()!=""){
+                    sub.setContent((sub.getContent())+" "+subs[++i]);
+                }else{
+                    sub.setContent(subs[++i]);
+                }
+            }else if(subs[i].equalsIgnoreCase("Dates:")){
+                i=i+1;
+                int flag=0;
+                //Mientras no termine con :
+                while(i<subs.length && !subs[i].endsWith(":")){
+                    //Si empieza con notBefore
+                    if(subs[i].startsWith("notBefore=")){
+                        //Si el nodo valb esta vacio
+                        valb.setContent(subs[i++].substring(10));
+                        flag=1;
+                    }else if(subs[i].startsWith("notAfter=")){
+                        //Si el nodo valb esta vacio
+                        vala.setContent(subs[i++].substring(9));
+                        flag=2;
+                    }else{
+                        if(flag==1){
+                            valb.setContent((valb.getContent())+" "+subs[i++]);
+                        }else if(flag==2){
+                            vala.setContent((vala.getContent())+" "+subs[i++]);
+                        }else{
+                            if(valb.getContent()!=""){
+                                valb.setContent((valb.getContent())+" "+subs[i]);
+                            }else{
+                                valb.setContent(subs[i]);
+                            }
+
+                            if(vala.getContent()!=""){
+                                vala.setContent((vala.getContent())+" "+subs[i]);
+                            }else{
+                                vala.setContent(subs[i]);
+                            }
+                            i=i+1;
+                        }
+                    }
+                }
+                i=i-1;
+            }else if(subs[i].equalsIgnoreCase("Hash:")){
+                if(hash.getContent()!=""){
+                    hash.setContent((hash.getContent())+" "+subs[++i]);
+                }else{
+                    hash.setContent(subs[++i]);
+                }
+            }else if(subs[i].equalsIgnoreCase("Fingerprint:")){
+                if(fing.getContent()!=""){
+                    fing.setContent((fing.getContent())+" "+subs[++i]);
+                }else{
+                    fing.setContent(subs[++i]);
+                }
+            }else{
+                log("No se de que campo es "+subs[i]);
+            }
         }
 
-    }*/
+        qy.addChild(iss);
+        qy.addChild(sub);
+        qy.addChild(valb);
+        qy.addChild(vala);
+        qy.addChild(hash);
+        qy.addChild(fing);
+
+        Vector<XMLElement> v = new Vector<XMLElement>();
+        v = qy.getChildren();
+
+        for(XMLElement e : v){
+           if(!e.getContent().equals("")){
+             String res = qy.toString();
+             return res;
+            }
+        }
+
+        return "";
+    }
+
+    public void xml2query(String xml, ArrayList<String[]> query){
+        XMLElement q = new XMLElement();
+        q.parseString(xml); //Transformo el query en un arbol
+        Vector childs = q.getChildren(); //Saco los hijos de la raiz
+        String content;
+        String scont[];
+        
+        if(childs!=null){
+            //Recorro los campos y guardo los valores de los campos
+            //como un arraylist de arreglos de string
+            for(int i=0; i<childs.size(); i++){
+                content = ((XMLElement)childs.get(i)).getContent();
+                //if(content!=""){
+                    scont = content.split("\\s+");
+                    query.add(scont);
+                //}
+            }
+        }
+
+        
+    }
+
+    public void searchCert(ArrayList<String[]> query, ArrayList<String> find,
+                            ArrayList<Certf> cert){
+        String a[];
+        Certf c;
+
+        ListIterator<Certf> cer = cert.listIterator();
+        ListIterator<String[]> str = query.listIterator();
+
+        //Recorro la lista de certf en el servidor
+        int k=0;
+        while(cer.hasNext()){
+            c = cer.next();
+            int i=0;
+            boolean aflag=false, vflag=false;
+            //int aflag=0;
+            //Recorro la lista de atributos
+            while(str.hasNext()){
+                a = str.next();
+                //Recorro la lista de valores para cada atributo
+                for(int j=0; j<a.length; j++){
+
+                    if(a[j]=="") continue;
+
+                    log("cert "+k+" atributo "+i+" valor "+a[j]+" "+(c.Fields.get(i)).contains(a[j]));
+                    if(c.Fields.get(i)!="" && !(c.Fields.get(i)).contains(a[j])){
+                        vflag=true;
+                        break;
+                    }
+                }
+
+                if(vflag){
+                    aflag=true;
+                    vflag=false;
+                    break;
+                }
+                i++;
+            }
+
+            if(aflag){
+                aflag=false;
+            }else{
+                find.add(c.Fname);
+            }
+            
+            str = query.listIterator();
+            k++;
+            i=0;
+        }
+
+    }
 
     public static void main(String[] args){
 
@@ -195,6 +386,38 @@ public class Certf{
             }
             
             c.printList(ac);
+            //c.query2xml("Issuer: L=Cape Validity: notBefore=Feb 25 23:30:40");
+            String asd = "";
+            String asd1 = "    \t   \t\t";
+            String asd2 = "   Issuer:   \tccs   Hash: 123456\t";
+            String asd3 = "   Habia una \t\tVEz un ISsuer derp  ";
+            String asd5 = "   Issuer: Dates: Hash:  ";
+            String asd4 = "Issuer: ccs Dates: notAfter=Feb 27 Dates: notAfter=Feb 26 Issuer: sam";
+            String algo = c.query2xml(asd5);
+			if(algo==""){ 
+				log("query vacio");
+				System.exit(0);
+			}
+            String a[];
+            //log(c.query2xml(asd));
+            ArrayList<String[]> query = new ArrayList<String[]>();
+            c.xml2query(algo,query);
+            for(int i=0; i<query.size(); i++){
+                a=query.get(i);
+                log(a.length);
+                for(int j=0; j<a.length; j++){
+                    log(a[j]);
+                }
+            }
+
+            ArrayList<String> encontrados = new ArrayList<String>();
+
+            c.searchCert(query,encontrados,ac);
+
+            for(int i=0; i<encontrados.size(); i++){
+                asd=encontrados.get(i);
+                log(asd);
+            }
     }
 
 }
