@@ -32,6 +32,7 @@ public class clicert{
             System.exit(1);
         }
 
+        if(dir.charAt(dir.length()-1)!='/') dir = dir+"/";
         System.out.println("dir dond guardar los certificados "+dir
                             +"\nip o nombre del buscador "+bushost
                             +"\npuerto de escucha del buscador "+busport+"\n");
@@ -50,7 +51,11 @@ public class clicert{
 
         BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
 
-        String userInput=null;
+        String userInput="";
+        String query="";
+        String fromBus="";
+        String certific="";
+        Certf cc = new Certf();
         int ln=0;
 
         while((userInput = stdIn.readLine())!=null){
@@ -59,36 +64,45 @@ public class clicert{
                     ln=ln+1;
                     System.out.println("Si inserta otra linea vacía el programa clicert terminara.");
                 }else if(ln==1){
-                    System.out.println("Clicer terminara ahora.");
+                    out.println("SALIDA");
+                    //System.out.println("Clicer terminara ahora.");
                     System.exit(0);
                 }
             }else{
                 ln=0;
 
                 //Transformar la entrada en XML
-               /* String[] a = userInput.split(" ");
-                for(int i=0; i<a.length; i++){
-                    System.out.println(a[i]);
+                query = cc.query2xml(userInput);
+                cc.log("cliente"+query);
+
+                if(query.equals("")){
+                    cc.log("Solicitud inválida. Inténtelo de nuevo.");
+                    continue;
                 }
-                */
             
                 //Enviarla al buscert
                 out.println("CLIENTE");
-                out.println(userInput);
-                String aux = in.readLine();
-                while(aux != null){   
-                    if(aux.equals("BUSCADOR")){
-                        System.out.println("Server: "+ aux) ;
-                        aux = in.readLine();
-                    }
-                    else{
-                        aux = null;
+                out.println(query);
+                out.println("ENDCLIENTE");
+                
+                //Recibir el Certificado
+                while(!(fromBus=in.readLine()).equals("ENDBUSCADOR")){ 
+                    if(fromBus.equals("BUSCADOR")){
+                        fromBus = in.readLine();
+                        certific = certific+fromBus;
+                    }else if(fromBus.equals("ENDCERT")){
+                        //Imprimir el certificado
+                        Certf.log("Server: "+ certific);
+                        //Guardar el certificado
+                        cc.xml2cert(dir,certific);
+                        certific="";
+                    }else if(fromBus.equals("NOCERT")){
+                        Certf.log("No se encontraron certificados con la búsqueda especificada");
+                    }else{
+                        fromBus = "";
                     }
                 }
 
-                //Guardar el Certificado
-                //Imprimir el Certificado
-                //System.out.println("echo: "+ userInput);
             }
         }
 

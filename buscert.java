@@ -3,100 +3,60 @@ import java.net.*;
 import java.util.*;
 
 public class buscert{
+
     public static void main(String args[]){
         int port = 4000;
         ServerSocket busqsocket = null;
         Socket server = null; 
-        ArrayList<String []> servidores = new ArrayList<String []>(); 
-
-
-        PrintWriter out = null;
-        BufferedReader in = null; 
-        String inputLine, outputLine;
 
         if(args.length==2 && args[0].equals("-p")){
             port = Integer.parseInt(args[1]);
         }else if(args.length==1 && args[0].equals("-help")){
             System.out.println("Uso: java buscert [-p <puerto>]");
             System.out.println("\t-p <puerto>: numero del puerto de escucha de buscert, por defecto, 4000.");
-        }
-
-        /* Abrimos Puerto para conexion con clicert y los servcert */
-        try{
-            busqsocket = new ServerSocket(port);
-        
-        }catch (IOException e){
-            System.err.println("No se puede escuchar en el puerto: " + port);
+            System.exit(0);
+        }else if(args.length==0){
+            
+        }else{
+            System.out.println("Error en las opciones. Para ver una ayuda ejecute java buscert -help");
             System.exit(1);
         }
 
-        Socket clientsocket = null;
+        boolean listening=true;
+        ArrayList<String []> servidores = new ArrayList<String []>(); 
+        ArrayList<String []> clientes = new ArrayList<String []>(); 
+        ArrayList<String []> certificados = new ArrayList<String []>();
 
-        /* Almacenamos la entrada del usuario para sacar las estadisticas */
-        BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
+        Thread est = new Thread(new busThread(servidores,clientes,certificados,1));
+        est.start(); 
 
-        Certf p = new Certf();
-        String aux = null;
+        while(listening){
 
-        String data = null ;
-        String resp = null ;
-        while(true){
-            /* Aceptamos conexion */
+            //Abrimos Puerto para conexion con clicert y los servcert
             try{
-                clientsocket = busqsocket.accept();
+                busqsocket = new ServerSocket(port);
+
             }catch (IOException e){
-                System.err.println("Error aceptando conexion " + port);
-                continue ;
+                System.err.println("No se puede escuchar en el puerto: " + port);
+                System.exit(1);
             }
 
             try{
-                out = new PrintWriter(clientsocket.getOutputStream(), true);
-                in = new BufferedReader(new InputStreamReader(clientsocket.getInputStream()));
-            }catch (IOException e){
-                System.out.println("Error obteniendo input/output stream");    
+                Certf.log("recibi un cliente");
+                Thread t = new Thread(new busThread(busqsocket.accept(),servidores,clientes,certificados,2));
+                t.start();
+            }catch(IOException e){
+                System.err.println("Error aceptando la conexion");
+                continue;
             }
-
+            
             try{
-                /*Leemos el input del socket */
-                data = in.readLine();
-                if(data.equals("CLIENTE")){
-                    /*Leemos el query */
-                    Certf.log("entre a cliente");
-                    data = in.readLine();
-                    System.out.println("clicert: " + data);
-                    /*Enviamos el query al servidor */
-                    for(int i=0; i < servidores.size() ; i++){
-                        server = new Socket(servidores.get(i)[0] , servidores.get(i)[1]);
-                        out = new PrintWriter(server.getOutputStream(), true);
-                        in = new BufferedReader(new InputStreamReader(server.getInputStream()));
-
-                        out.println("BUSCADOR");
-                        out.println(data); 
-                        Certf.log("envie data al servidor");
-                    }
-                }else if(data.equals("SERVER")){
-                    String[] info = new String[2];
-                    info[0] = clientsocket.getInetAddress();
-                    info[1] = clientsocket.getPort();
-
-                    servidores.add(info);
-
-                    /*Leemos el certificado */
-                    Certf.log("Leere data del servidor");
-                    data = in.readLine();
-                    System.out.println("server: " + data + "\n");
-                    /*Enviamos certificado al cliente */
-                    out.println("BUSCADOR");
-                    out.println(data);
-                }
-                out.close();
-                in.close();
-                clientsocket.close();
-                //busqsocket.close();
-            } catch(IOException e){
-                System.out.println("Error procesando datos buscert");
+                busqsocket.close();
+            }catch(IOException e){
+                System.err.println("Error cerrando la conexion");
+                continue;
             }
-
         }
-}
+
+    }
 } 

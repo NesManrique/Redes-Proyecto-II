@@ -116,7 +116,7 @@ public class Certf{
         System.out.println(aMessage);
     }
 
-    public String cert2xml(String serv, String filecert){
+    public String cert2xml(String filecert){
         String all = "";
         try{
             BufferedReader input = new BufferedReader(new FileReader(filecert));
@@ -130,44 +130,78 @@ public class Certf{
         }
         XMLElement certf = new XMLElement();
         XMLElement certname = new XMLElement();
-        XMLElement servname = new XMLElement();
         certf.setName("Certificate");
-        certname.setName(filecert);
-        servname.setName(serv);
+        //log("bla "+filecert.replaceAll("([\\w-]*/)+",""));
+        certname.setName(filecert.replaceAll("([\\w-]*/)+",""));
         certname.setContent(all);
-        certf.addChild(servname);
         certf.addChild(certname);
         all = certf.toString();
         if(all.contains("&#xa;")){
             all = all.replace("&#xa;","\n");
         }
+        //log("certificate "+all);
         return all;
     }
 
-    public void xml2cert(String certxml){
+    public void xml2cert(String dir, String certxml){
         String fname="";
         String content="";
+        String aux="";
+        int i=0;
         Vector v = new Vector();
 
         XMLElement certf = new XMLElement();
         try{
             certf.parseString(certxml);
         }catch(XMLParseException e){
-            log("Error leyendo el archivo xml");
+            log(e.getMessage());
         }
 
         v = certf.getChildren();
 
-        fname = ((XMLElement)v.get(1)).getName();
-        content = ((XMLElement)v.get(1)).getContent();
+        fname = ((XMLElement)v.get(0)).getName();
+        content = ((XMLElement)v.get(0)).getContent();
+
+        content = content.substring(27);
+
+        for(i=0; i<content.length(); i=i+64){
+            if(i+64<content.length())
+                aux=aux+content.substring(i,i+64)+"\n";
+            else
+                break;
+        }
+                
+        for(;content.charAt(i)!='-';i++){
+            aux=aux+content.charAt(i);
+        }
+
+        aux="-----BEGIN CERTIFICATE-----\n"+aux+"\n-----END CERTIFICATE-----";
+
+        //log(aux);
 
         try {
-            BufferedWriter out = new BufferedWriter(new FileWriter(fname));
-            out.write(content);
+            BufferedWriter out = new BufferedWriter(new FileWriter(dir+fname));
+            out.write(aux);
             out.close();
         } catch (IOException e) {
             log("Problema Escribiendo el archivo: "+fname);
         }
+    }
+
+    public String xmlName(String certxml){
+        Vector v = new Vector();
+
+        XMLElement certf = new XMLElement();
+        try{
+            certf.parseString(certxml);
+        }catch(XMLParseException e){
+            log(e.getMessage());
+        }
+
+        v = certf.getChildren();
+
+        return ((XMLElement)v.get(0)).getName();
+
     }
 
     public boolean hasChildren(XMLElement x, String a){
@@ -272,7 +306,7 @@ public class Certf{
                     fing.setContent(subs[++i]);
                 }
             }else{
-                log("No se de que campo es "+subs[i]);
+                //log("No se de que campo es "+subs[i]);
             }
         }
 
@@ -318,8 +352,8 @@ public class Certf{
         
     }
 
-    public void searchCert(ArrayList<String[]> query, ArrayList<String> find,
-                            ArrayList<Certf> cert){
+    public void searchCert(ArrayList<String[]> query, ArrayList<Certf> cert, 
+                                ArrayList<String> find){
         String a[];
         Certf c;
 
@@ -341,7 +375,7 @@ public class Certf{
 
                     if(a[j]=="") continue;
 
-                    log("cert "+k+" atributo "+i+" valor "+a[j]+" "+(c.Fields.get(i)).contains(a[j]));
+                    //log("cert "+k+" atributo "+i+" valor "+a[j]+" "+(c.Fields.get(i)).contains(a[j]));
                     if(c.Fields.get(i)!="" && !(c.Fields.get(i)).contains(a[j])){
                         vflag=true;
                         break;
@@ -393,7 +427,7 @@ public class Certf{
             String asd3 = "   Habia una \t\tVEz un ISsuer derp  ";
             String asd5 = "   Issuer: Dates: Hash:  ";
             String asd4 = "Issuer: ccs Dates: notAfter=Feb 27 Dates: notAfter=Feb 26 Issuer: sam";
-            String algo = c.query2xml(asd5);
+            String algo = c.query2xml("Issuer: vln");
 			if(algo==""){ 
 				log("query vacio");
 				System.exit(0);
@@ -412,8 +446,9 @@ public class Certf{
 
             ArrayList<String> encontrados = new ArrayList<String>();
 
-            c.searchCert(query,encontrados,ac);
-
+            c.searchCert(query,ac,encontrados);
+            
+            if(encontrados.size()<=0) log("no hay certificados");
             for(int i=0; i<encontrados.size(); i++){
                 asd=encontrados.get(i);
                 log(asd);
