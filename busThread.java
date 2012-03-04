@@ -45,7 +45,7 @@ public class busThread implements Runnable{
         }
 
         Certf.log(h);
-        if(h==Cert.size() || Cert.size()==0){
+        if(h==Cert.size()){
             cert_[1]="1";
             Cert.add(cert_);
         }
