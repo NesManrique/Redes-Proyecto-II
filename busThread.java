@@ -38,7 +38,9 @@ public class busThread implements Runnable{
 
         for(String a[] : Cert){
             if(a[0].equals(cert_[0])){
-                cert_[1]=(Integer.parseInt(cert_[1])+1)+"";
+                int cant = Integer.parseInt(a[1]);
+                Certf.log(cant);
+                a[1]=(cant+1)+"";
                 break;
             }
             h++;
